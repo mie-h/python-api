@@ -1,0 +1,4 @@
+API KEY of DREAMSTUDIO is saved on activate file of python venv
+
+nft.storage is a free IPFS storage service
+what is IPFS?

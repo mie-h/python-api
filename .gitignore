@@ -1,0 +1,8 @@
+# venv
+devenv
+
+# images
+*.png
+
+# vscode
+.vscode

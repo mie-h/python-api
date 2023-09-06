@@ -1,0 +1,42 @@
+Text to image NFT generation
+
+
+Text -> generate image -> mint NFT
+
+
+All these happen on Solana chain:
+Client sends a text and a recipient address(Solana address)
+
+
+- Call the dreamstudio API and generate an image
+- Upload the image to NFT.storage
+
+NFT.storage generates a link, which is a handle to an img you uploaded
+IPFS (not HTTP protocol).
+
+- Upload the image to nft.storage which returns a cid handle
+- Create a link from the cid handle using this format - https://ipfs.io/ipfs/${cid}
+- Upload the Token Metadata with the following format below
+
+const tokenMetadata = {
+    name: nftName, // to be passed by the client
+    description: description, // same
+    symbol: symbol, // same
+    image: imgURI, # “https://ipfs.io/ipfs/${json.value.cid}” // CID link from above
+    attributes: attributes, // User supplied 
+  };
+
+Attributes is an array that looks like this:
+{
+  “trait_type”: “MIE”,
+  “value”: “HONESTY”,
+}
+
+- Grab the CID from token metadata upload and use it in the same format as above - https://ipfs.io/ipfs/${cid}
+- Pass this link along with name, description, symbol & attributes to mint function below later but first,
+- Call deploy method to actually mint an NFT token which generates a mint address for the NFT
+- Call mint method as mentioned before this address and recipient address
+
+Minting NFT:
+- Use deploy method - https://github.com/metaplex-foundation/python-api/blob/main/api/metaplex_api.py#L28
+- Use mint - https://github.com/metaplex-foundation/python-api/blob/main/api/metaplex_api.py#L73
