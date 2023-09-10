@@ -32,7 +32,7 @@ Attributes is an array that looks like this:
   “value”: “HONESTY”,
 }
 
-- Grab the CID from token metadata upload and use it in the same format as above - https://ipfs.io/ipfs/${cid}
+- Grab the CID from token metadata upload and use it in the same format as above - https://ipfs.io/ipfs/{cid} // json url
 - Pass this link along with name, description, symbol & attributes to mint function below later but first,
 - Call deploy method to actually mint an NFT token which generates a mint address for the NFT
 - Call mint method as mentioned before this address and recipient address

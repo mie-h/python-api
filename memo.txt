@@ -1,4 +1,12 @@
 API KEY of DREAMSTUDIO is saved on activate file of python venv
 
 nft.storage is a free IPFS storage service
+nft.storage API: https://nft.storage/api-docs/
+https://github.com/nftstorage/python-client/blob/main/docs/NFTStorageAPI.md#store
+
+uplaod an image using the json cid -> get cid for the image
+upload metadata to nft storage + use the json cid and ipfs link -> get cid for the json
+-> this is the link for NFT img used on minting(metaplex)
+
+
 what is IPFS?

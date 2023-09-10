@@ -8,6 +8,7 @@ from nft_storage.model.forbidden_error_response import ForbiddenErrorResponse
 
 
 # Configure Bearer authorization (JWT): bearerAuth
+# TODO: learn what JWT is
 configuration = nft_storage.Configuration(access_token=os.getenv("NFT_STORAGE_API_KEY"))
 
 # Enter a context with an instance of the API client

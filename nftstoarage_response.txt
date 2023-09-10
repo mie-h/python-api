@@ -1,0 +1,14 @@
+{'ok': True,
+ 'value': {'cid': 'bafybeigwmnwmevdkox7kzqzpqqszgggbq2s2up3gjwpntxcgyrz64fkp44',
+           'created': '2023-09-07T15: 55: 54.895+00: 00',
+           'deals': [],
+           'files': [],
+           'name': 'Upload at 2023-09-07T16: 02: 25.580Z',
+           'pin': {'cid': 'bafybeigwmnwmevdkox7kzqzpqqszgggbq2s2up3gjwpntxcgyrz64fkp44',
+                   'created': '2023-09-07T15: 55: 54.895+00: 00',
+                   'size': 1353705,
+                   'status': 'pinned'
+        },
+           'scope': 'personal_project_2',
+           'size': 1353705,
+           'type': 'image/*'}}
