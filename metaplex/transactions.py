@@ -82,7 +82,6 @@ def deploy(api_endpoint, source_account: Keypair, name, symbol, fees):
         payer=source_account.pubkey(),
     )
     tx = tx.add(create_metadata_ix)
-    print("About to return tx")
     return tx, signers, str(mint_account.pubkey())
 
 
@@ -194,10 +193,10 @@ def mint(
     associated_token_account = get_associated_token_address(user_account, mint_account)
     associated_token_account_info = client.get_account_info(associated_token_account)
     # Check if PDA is initialized. If not, create the account
-    account_info = associated_token_account_info["result"]["value"]
+    account_info = associated_token_account_info.value
     if account_info is not None:
         account_state = ACCOUNT_LAYOUT.parse(
-            base64.b64decode(account_info["data"][0])
+            base64.b64decode(account_info.data[0])
         ).state
     else:
         account_state = 0

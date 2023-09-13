@@ -5,4 +5,4 @@ devenv
 *.png
 
 # vscode
-.vscode
+.vscodeinit_env_vars.sh

@@ -107,7 +107,6 @@ class MetaplexAPI:
             tx, signers, contract = deploy(
                 api_endpoint, self.keypair, name, symbol, fees
             )
-            print(f"contract inside deploy method {contract}")
             resp = execute(
                 api_endpoint,
                 tx,
@@ -118,7 +117,6 @@ class MetaplexAPI:
                 target=target,
                 finalized=finalized,
             )
-            print("Deploy execution Result", resp)
             return json.dumps({"contract": contract, "status": 200})
         except:
             return json.dumps({"status": 400})
@@ -149,8 +147,7 @@ class MetaplexAPI:
                 target=target,
                 finalized=finalized,
             )
-            resp["status"] = 200
-            return json.dumps(resp)
+            return resp.to_json()
         except:
             return json.dumps({"status": 400})
 
@@ -183,8 +180,7 @@ class MetaplexAPI:
             target=target,
             finalized=finalized,
         )
-        resp["status"] = 200
-        return json.dumps(resp)
+        return resp.to_json()
         # except:
         #     return json.dumps({"status": 400})
 

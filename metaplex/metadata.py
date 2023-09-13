@@ -6,6 +6,7 @@ from construct import Struct as cStruct  # type: ignore
 from solders.pubkey import Pubkey as PublicKey
 from solders.instruction import Instruction
 from solders.hash import Hash
+from solana.rpc.api import Client
 from solders.transaction import Transaction
 from solana.transaction import AccountMeta
 import base58
@@ -220,11 +221,11 @@ def unpack_metadata_account(data):
     return metadata
 
 
-def get_metadata(client, mint_key):
+def get_metadata(client: Client, mint_key: PublicKey):
     metadata_account = get_metadata_account(mint_key)
-    client_metadata_account = dict(client.get_account_info(metadata_account))
-    data = base64.b64decode(client_metadata_account["result"]["value"]["data"][0])
-    metadata = unpack_metadata_account(data)
+    account_info = client.get_account_info(metadata_account)
+    account = account_info.value
+    metadata = unpack_metadata_account(account.data)
     return metadata
 
 
@@ -276,13 +277,13 @@ def create_master_edition_instruction(
         AccountMeta(pubkey=payer, is_signer=True, is_writable=False),
         AccountMeta(pubkey=metadata_account, is_signer=False, is_writable=False),
         AccountMeta(
-            pubkey=PublicKey(TOKEN_PROGRAM_ID), is_signer=False, is_writable=False
+            pubkey=TOKEN_PROGRAM_ID, is_signer=False, is_writable=False
         ),
         AccountMeta(
-            pubkey=PublicKey(SYSTEM_PROGRAM_ID), is_signer=False, is_writable=False
+            pubkey=SYSTEM_PROGRAM_ID, is_signer=False, is_writable=False
         ),
         AccountMeta(
-            pubkey=PublicKey(SYSVAR_RENT_PUBKEY), is_signer=False, is_writable=False
+            pubkey=SYSVAR_RENT_PUBKEY, is_signer=False, is_writable=False
         ),
     ]
     return Instruction(METADATA_PROGRAM_ID, data, keys)

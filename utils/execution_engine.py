@@ -43,7 +43,6 @@ def await_confirmation(
         time.sleep(sleep_time)
         elapsed += sleep_time
         resp = client.get_signature_statuses(signatures)
-        print("resp is", resp)
         if resp.value[0] is not None:
             confirmations = resp.value[0].confirmations
             is_finalized = (
