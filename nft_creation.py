@@ -2,6 +2,7 @@ import os
 import json
 import base58
 from solana.rpc.api import Client
+from solders.pubkey import Pubkey as PublicKey
 from cryptography.fernet import Fernet
 from api.metaplex_api import MetaplexAPI
 
@@ -15,9 +16,11 @@ cfg = {
 }
 api_endpoint = "https://api.testnet.solana.com/"
 # get SOL on account A
-Client(api_endpoint).request_airdrop(PUBLIC_KEY, int(1e10))
+response = Client(api_endpoint).request_airdrop(
+    PublicKey.from_string(PUBLIC_KEY), int(1e10)
+)
 
-print(f"PUBLIC_KEY: {PUBLIC_KEY}")
+print(f"response: {response}")
 
 
 # Create API
@@ -36,7 +39,7 @@ contract = json.loads(response)["contract"]
 
 # Topup - The base58 encoded public key of the destination address
 RECEIVER_PUBLIC_KEY = "7hLeJJUYmp42WEhZamd1XwgoTFj2pyZe9RG685ogi9fb"
-metaplex_api.topup(api_endpoint, RECEIVER_PUBLIC_KEY)
+metaplex_api.topup(api_endpoint, PublicKey.from_string(RECEIVER_PUBLIC_KEY))
 
 # Mint
 print("About to mint")
@@ -47,8 +50,8 @@ link: (str) The link to the content of the the NFT
 """
 metaplex_api.mint(
     api_endpoint,
-    contract,
-    RECEIVER_PUBLIC_KEY,
+    PublicKey.from_string(contract),
+    PublicKey.from_string(RECEIVER_PUBLIC_KEY),
     "https://ipfs.io/ipfs/bafkreidr5cnmualj2eh7g6bpe2iztglbfvottfceamswqevlye7negmkcq",
 )
 
@@ -100,7 +103,7 @@ encrypted_key = metaplex_api.cipher.encrypt(
 metaplex_api.send(
     api_endpoint,
     contract,
-    PUBLIC_KEY,
-    RECEIVER_PUBLIC_KEY,
+    PublicKey.from_string(PUBLIC_KEY),
+    PublicKey.from_string(RECEIVER_PUBLIC_KEY),
     encrypted_key,
 )

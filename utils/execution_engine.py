@@ -1,12 +1,13 @@
 import time
-from solana.keypair import Keypair
 from solana.rpc.api import Client
 from solana.rpc.types import TxOpts
+from solana.transaction import Transaction
+from solders.transaction_status import TransactionConfirmationStatus
 
 
 def execute(
     api_endpoint,
-    tx,
+    tx: Transaction,
     signers,
     max_retries=1,
     skip_confirmation=False,
@@ -21,7 +22,7 @@ def execute(
                 tx, *signers, opts=TxOpts(skip_confirmation=False, skip_preflight=True)
             )
             print(f"send_transaction result: {result}")
-            signatures = [x.signature for x in tx.signatures]
+            signatures = [x for x in tx.signatures]
             if not skip_confirmation:
                 print("Awaiting Confirmation")
                 await_confirmation(client, signatures, max_timeout, target, finalized)
@@ -33,17 +34,21 @@ def execute(
     raise e
 
 
-def await_confirmation(client, signatures, max_timeout=60, target=20, finalized=True):
+def await_confirmation(
+    client: Client, signatures, max_timeout=60, target=20, finalized=True
+):
     elapsed = 0
     while elapsed < max_timeout:
         sleep_time = 1
         time.sleep(sleep_time)
         elapsed += sleep_time
         resp = client.get_signature_statuses(signatures)
-        if resp["result"]["value"][0] is not None:
-            confirmations = resp["result"]["value"][0]["confirmations"]
+        print("resp is", resp)
+        if resp.value[0] is not None:
+            confirmations = resp.value[0].confirmations
             is_finalized = (
-                resp["result"]["value"][0]["confirmationStatus"] == "finalized"
+                resp.value[0].confirmation_status
+                == TransactionConfirmationStatus.Finalized
             )
         else:
             continue

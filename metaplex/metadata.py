@@ -3,8 +3,11 @@ import struct
 from enum import IntEnum
 from construct import Bytes, Flag, Int8ul
 from construct import Struct as cStruct  # type: ignore
-from solana.publickey import PublicKey
-from solana.transaction import AccountMeta, TransactionInstruction
+from solders.pubkey import Pubkey as PublicKey
+from solders.instruction import Instruction
+from solders.hash import Hash
+from solders.transaction import Transaction
+from solana.transaction import AccountMeta
 import base58
 import base64
 
@@ -20,28 +23,36 @@ class InstructionType(IntEnum):
     UPDATE_METADATA = 1
 
 
-METADATA_PROGRAM_ID = PublicKey("metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s")
-SYSTEM_PROGRAM_ID = PublicKey("11111111111111111111111111111111")
-SYSVAR_RENT_PUBKEY = PublicKey("SysvarRent111111111111111111111111111111111")
-ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID = PublicKey(
+METADATA_PROGRAM_ID = PublicKey.from_string(
+    "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"
+)
+SYSTEM_PROGRAM_ID = PublicKey.from_string("11111111111111111111111111111111")
+SYSVAR_RENT_PUBKEY = PublicKey.from_string(
+    "SysvarRent111111111111111111111111111111111"
+)
+ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID = PublicKey.from_string(
     "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
 )
-TOKEN_PROGRAM_ID = PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA")
+TOKEN_PROGRAM_ID = PublicKey.from_string("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA")
 
 
-def get_metadata_account(mint_key):
+def get_metadata_account(mint_key: PublicKey):
     return PublicKey.find_program_address(
-        [b"metadata", bytes(METADATA_PROGRAM_ID), bytes(PublicKey(mint_key))],
+        [
+            b"metadata",
+            METADATA_PROGRAM_ID.__bytes__(),
+            mint_key.__bytes__(),
+        ],
         METADATA_PROGRAM_ID,
     )[0]
 
 
-def get_edition(mint_key):
+def get_edition(mint_key: PublicKey):
     return PublicKey.find_program_address(
         [
             b"metadata",
-            bytes(METADATA_PROGRAM_ID),
-            bytes(PublicKey(mint_key)),
+            METADATA_PROGRAM_ID.__bytes__(),
+            mint_key.__bytes__(),
             b"edition",
         ],
         METADATA_PROGRAM_ID,
@@ -60,9 +71,11 @@ def create_associated_token_account_instruction(
         AccountMeta(pubkey=TOKEN_PROGRAM_ID, is_signer=False, is_writable=False),
         AccountMeta(pubkey=SYSVAR_RENT_PUBKEY, is_signer=False, is_writable=False),
     ]
-    return TransactionInstruction(
-        keys=keys, program_id=ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID
+    arbitrary_instruction_data = bytes([1])
+    instruction = Instruction(
+        ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID, arbitrary_instruction_data, keys
     )
+    return instruction
 
 
 def _get_data_buffer(name, symbol, uri, fee, creators, verified=None, share=None):
@@ -130,7 +143,6 @@ def create_metadata_instruction(
     data, update_authority, mint_key, mint_authority_key, payer
 ):
     metadata_account = get_metadata_account(mint_key)
-    print(metadata_account)
     keys = [
         AccountMeta(pubkey=metadata_account, is_signer=False, is_writable=True),
         AccountMeta(pubkey=mint_key, is_signer=False, is_writable=False),
@@ -140,7 +152,8 @@ def create_metadata_instruction(
         AccountMeta(pubkey=SYSTEM_PROGRAM_ID, is_signer=False, is_writable=False),
         AccountMeta(pubkey=SYSVAR_RENT_PUBKEY, is_signer=False, is_writable=False),
     ]
-    return TransactionInstruction(keys=keys, program_id=METADATA_PROGRAM_ID, data=data)
+
+    return Instruction(METADATA_PROGRAM_ID, data, keys)
 
 
 def unpack_metadata_account(data):
@@ -239,7 +252,7 @@ def update_metadata_instruction(data, update_authority, mint_key):
         AccountMeta(pubkey=metadata_account, is_signer=False, is_writable=True),
         AccountMeta(pubkey=update_authority, is_signer=True, is_writable=False),
     ]
-    return TransactionInstruction(keys=keys, program_id=METADATA_PROGRAM_ID, data=data)
+    return Instruction(METADATA_PROGRAM_ID, data, keys)
 
 
 def create_master_edition_instruction(
@@ -272,8 +285,4 @@ def create_master_edition_instruction(
             pubkey=PublicKey(SYSVAR_RENT_PUBKEY), is_signer=False, is_writable=False
         ),
     ]
-    return TransactionInstruction(
-        keys=keys,
-        program_id=METADATA_PROGRAM_ID,
-        data=data,
-    )
+    return Instruction(METADATA_PROGRAM_ID, data, keys)
