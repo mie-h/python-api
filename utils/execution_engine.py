@@ -21,15 +21,11 @@ def execute(
             result = client.send_transaction(
                 tx, *signers, opts=TxOpts(skip_confirmation=False, skip_preflight=True)
             )
-            print(f"send_transaction result: {result}")
             signatures = [x for x in tx.signatures]
             if not skip_confirmation:
-                print("Awaiting Confirmation")
                 await_confirmation(client, signatures, max_timeout, target, finalized)
-            print("Done awaiting confirmation, here is the result", result)
             return result
         except Exception as e:
-            print(f"Failed attempt {attempt}: {e}")
             continue
     raise e
 
@@ -53,8 +49,6 @@ def await_confirmation(
             continue
         if not finalized:
             if confirmations >= target or is_finalized:
-                print(f"Took {elapsed} seconds to confirm transaction")
                 return
         elif is_finalized:
-            print(f"Took {elapsed} seconds to confirm transaction")
             return
