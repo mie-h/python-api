@@ -27,8 +27,7 @@ def await_full_confirmation(client: Client, txn, max_timeout=60):
 
 # def test(api_endpoint="https://api.devnet.solana.com/"):
 def test(api_endpoint="https://api.testnet.solana.com/"):
-    keypair = Keypair.from_base58_string("5SmmTWfS2uJ4bg9NfkJzTGuCGHC55QvijxJksXjaJNipr3ztECLfY73T3HQYTGKCkD2Y4e57Tgd6X6bTNDC6d8n2")
-    print(keypair.pubkey())
+    keypair = Keypair()
     cfg = {
         "PRIVATE_KEY": str(keypair),
         "PUBLIC_KEY": str(keypair.pubkey()),
@@ -36,12 +35,12 @@ def test(api_endpoint="https://api.testnet.solana.com/"):
     }
     api = MetaplexAPI(cfg)
     client = Client(api_endpoint)
-    # resp = None
-    # while resp is None:
-    #     resp = client.request_airdrop(keypair.pubkey(), int(1e9))
-    # print("Request Airdrop:", resp)
-    # txn = resp.value
-    # await_full_confirmation(client, txn)
+    resp = None
+    while resp is None:
+        resp = client.request_airdrop(keypair.pubkey(), int(1e9))
+    print("Request Airdrop:", resp)
+    txn = resp.value
+    await_full_confirmation(client, txn)
     letters = string.ascii_uppercase
     name = ''.join([random.choice(letters) for i in range(32)])
     symbol = ''.join([random.choice(letters) for i in range(10)])
