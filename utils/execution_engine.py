@@ -26,8 +26,8 @@ def execute(
                 await_confirmation(client, signatures, max_timeout, target, finalized)
             return result
         except Exception as e:
+            print(f"Failed attempt {attempt}: {e}")
             continue
-    raise e
 
 
 def await_confirmation(
@@ -49,6 +49,8 @@ def await_confirmation(
             continue
         if not finalized:
             if confirmations >= target or is_finalized:
+                print(f"Took {elapsed} seconds to confirm transaction")
                 return
         elif is_finalized:
+            print(f"Took {elapsed} seconds to confirm transaction")
             return

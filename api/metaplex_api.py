@@ -8,84 +8,18 @@ from utils.execution_engine import execute
 
 class MetaplexAPI:
     def __init__(self, cfg):
-        self.private_key = base58.b58decode(cfg["PRIVATE_KEY"])
+        base58_private_key = cfg["PRIVATE_KEY"] # this is base 58 encoded
         self.public_key = cfg["PUBLIC_KEY"]
-        self.keypair = Keypair.from_bytes(
-            [
-                218,
-                164,
-                132,
-                47,
-                55,
-                43,
-                133,
-                244,
-                135,
-                225,
-                132,
-                168,
-                68,
-                252,
-                24,
-                202,
-                27,
-                65,
-                170,
-                8,
-                26,
-                118,
-                247,
-                203,
-                58,
-                182,
-                166,
-                10,
-                234,
-                173,
-                109,
-                255,
-                138,
-                157,
-                41,
-                152,
-                195,
-                236,
-                147,
-                215,
-                23,
-                133,
-                123,
-                187,
-                41,
-                38,
-                27,
-                188,
-                15,
-                59,
-                249,
-                191,
-                39,
-                209,
-                201,
-                213,
-                175,
-                12,
-                248,
-                78,
-                196,
-                119,
-                78,
-                225,
-            ]
-        )
+        self.keypair = Keypair.from_base58_string(base58_private_key)
+        self.private_key = self.keypair.to_bytes_array()
         self.cipher = Fernet(cfg["DECRYPTION_KEY"])
 
     def wallet(self):
         """Generate a wallet and return the address and private key."""
         keypair = Keypair()
-        pub_key = keypair.pubkey
-        private_key = list(keypair.seed)
-        return json.dumps({"address": str(pub_key), "private_key": private_key})
+        public_key = keypair.pubkey()
+        private_key = keypair.to_bytes_array()
+        return json.dumps({"address": str(public_key), "private_key": private_key})
 
     def deploy(
         self,
@@ -117,6 +51,7 @@ class MetaplexAPI:
                 target=target,
                 finalized=finalized,
             )
+            print(resp)
             return json.dumps({"contract": contract, "status": 200})
         except:
             return json.dumps({"status": 400})
@@ -147,7 +82,9 @@ class MetaplexAPI:
                 target=target,
                 finalized=finalized,
             )
-            return resp.to_json()
+            resp = json.loads(resp.to_json())
+            resp["status"] = 200
+            return json.dumps(resp)
         except:
             return json.dumps({"status": 400})
 
@@ -180,7 +117,9 @@ class MetaplexAPI:
             target=target,
             finalized=finalized,
         )
-        return resp.to_json()
+        resp = json.loads(resp.to_json())
+        resp["status"] = 200
+        return json.dumps(resp)
         # except:
         #     return json.dumps({"status": 400})
 
@@ -247,7 +186,7 @@ class MetaplexAPI:
         Return a status flag of success or fail and the native transaction data.
         """
         try:
-            private_key = list(self.cipher.decrypt(encrypted_private_key))
+            private_key = self.cipher.decrypt(encrypted_private_key)
             tx, signers = send(
                 api_endpoint,
                 self.keypair,
@@ -266,6 +205,7 @@ class MetaplexAPI:
                 target=target,
                 finalized=finalized,
             )
+            resp = json.loads(resp.to_json())
             resp["status"] = 200
             return json.dumps(resp)
         except:
@@ -289,7 +229,7 @@ class MetaplexAPI:
         Return a status flag of success or fail and the native transaction data.
         """
         try:
-            private_key = list(self.cipher.decrypt(encrypted_private_key))
+            private_key = self.cipher.decrypt(encrypted_private_key)
             tx, signers = burn(api_endpoint, contract_key, owner_key, private_key)
             resp = execute(
                 api_endpoint,
@@ -301,6 +241,7 @@ class MetaplexAPI:
                 target=target,
                 finalized=finalized,
             )
+            resp = json.loads(resp.to_json())
             resp["status"] = 200
             return json.dumps(resp)
         except:

@@ -50,6 +50,7 @@ def deploy(api_endpoint, source_account: Keypair, name, symbol, fees):
         MINT_LAYOUT.sizeof()
     )
     lamports = min_rent_reseponse.value
+
     # Generate Mint
     create_mint_account_ix = create_account(
         CreateAccountParams(
@@ -100,7 +101,7 @@ def topup(api_endpoint, sender_account: Keypair, to, amount=None):
     # Connect to the api_endpoint
     client = Client(api_endpoint)
     # List accounts
-    dest_account = PublicKey(to)
+    dest_account = PublicKey.from_string(to)
     # List signers
     signers = [sender_account]
     # Start transaction
@@ -110,9 +111,10 @@ def topup(api_endpoint, sender_account: Keypair, to, amount=None):
         min_rent_reseponse = client.get_minimum_balance_for_rent_exemption(
             ACCOUNT_LAYOUT.sizeof()
         )
-        lamports = min_rent_reseponse["result"]
+        lamports = min_rent_reseponse.value
     else:
         lamports = int(amount)
+    
     # Generate transaction
     transfer_ix = transfer(
         TransferParams(
@@ -139,7 +141,7 @@ def update_token_metadata(
     """
     Updates the json metadata for a given mint token id.
     """
-    mint_account = PublicKey(mint_token_id)
+    mint_account = PublicKey.from_string(mint_token_id)
     signers = [source_account]
 
     tx = Transaction()
@@ -247,7 +249,7 @@ def mint(
     return tx, signers
 
 
-def send(api_endpoint, source_account, contract_key, sender_key, dest_key, private_key):
+def send(api_endpoint, source_account: Keypair, contract_key, sender_key, dest_key, private_key: bytes):
     """
     Transfer a token on a given network and contract from the sender to the recipient.
     May require a private key, if so this will be provided encrypted using Fernet: https://cryptography.io/en/latest/fernet/
@@ -256,26 +258,27 @@ def send(api_endpoint, source_account, contract_key, sender_key, dest_key, priva
     # Initialize Client
     client = Client(api_endpoint)
     # List non-derived accounts
-    owner_account = Keypair(private_key)  # Owner of contract
-    sender_account = PublicKey(sender_key)  # Public key of `owner_account`
+    owner_account = Keypair.from_bytes(private_key)  # Owner of contract
+    sender_account = PublicKey.from_string(sender_key)  # Public key of `owner_account`
     token_account = TOKEN_PROGRAM_ID
-    mint_account = PublicKey(contract_key)
-    dest_account = PublicKey(dest_key)
+    mint_account = PublicKey.from_string(contract_key)
+    dest_account = PublicKey.from_string(dest_key)
     # This is a very rare care, but in the off chance that the source wallet is the recipient of a transfer we don't need a list of 2 keys
     signers = [source_account, owner_account]
     # Start transaction
     tx = Transaction()
     # Find PDA for sender
     token_pda_address = get_associated_token_address(sender_account, mint_account)
-    if client.get_account_info(token_pda_address)["result"]["value"] is None:
+    token_pds_account_info = client.get_account_info(token_pda_address)
+    if token_pds_account_info.value is None:
         raise Exception
     # Check if PDA is initialized for receiver. If not, create the account
     associated_token_account = get_associated_token_address(dest_account, mint_account)
     associated_token_account_info = client.get_account_info(associated_token_account)
-    account_info = associated_token_account_info["result"]["value"]
+    account_info = associated_token_account_info.value
     if account_info is not None:
         account_state = ACCOUNT_LAYOUT.parse(
-            base64.b64decode(account_info["data"][0])
+            base64.b64decode(account_info.data[0])
         ).state
     else:
         account_state = 0
@@ -302,7 +305,7 @@ def send(api_endpoint, source_account, contract_key, sender_key, dest_key, priva
     return tx, signers
 
 
-def burn(api_endpoint, contract_key, owner_key, private_key):
+def burn(api_endpoint, contract_key, owner_key, private_key: bytes):
     """
     Burn a token, permanently removing it from the blockchain.
     May require a private key, if so this will be provided encrypted using Fernet: https://cryptography.io/en/latest/fernet/
@@ -311,16 +314,17 @@ def burn(api_endpoint, contract_key, owner_key, private_key):
     # Initialize Client
     client = Client(api_endpoint)
     # List accounts
-    owner_account = PublicKey(owner_key)
+    owner_account = PublicKey.from_string(owner_key)
     token_account = TOKEN_PROGRAM_ID
-    mint_account = PublicKey(contract_key)
+    mint_account = PublicKey.from_string(contract_key)
     # List signers
-    signers = [Keypair(private_key)]
+    signers = [Keypair.from_bytes(private_key)]
     # Start transaction
     tx = Transaction()
     # Find PDA for sender
     token_pda_address = get_associated_token_address(owner_account, mint_account)
-    if client.get_account_info(token_pda_address)["result"]["value"] is None:
+    token_pds_account_info = client.get_account_info(token_pda_address)
+    if token_pds_account_info is None:
         raise Exception
     # Burn token
     burn_ix = spl_burn(
