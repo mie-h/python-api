@@ -30,12 +30,11 @@ from metaplex.metadata import (
     get_metadata,
     update_metadata_instruction_data,
     update_metadata_instruction,
-    ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID,
     TOKEN_PROGRAM_ID,
 )
 
 
-def deploy(api_endpoint, source_account: Keypair, name, symbol, fees):
+def deploy(api_endpoint: str, source_account: Keypair, name, symbol, fees):
     # Initalize Client
     client = Client(api_endpoint)
     # List non-derived accounts
