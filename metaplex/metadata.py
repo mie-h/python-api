@@ -1,16 +1,13 @@
-from typing import Union
+from typing import Any, Optional
 import struct
 from enum import IntEnum
 from construct import Bytes, Flag, Int8ul
 from construct import Struct as cStruct  # type: ignore
 from solders.pubkey import Pubkey as PublicKey
 from solders.instruction import Instruction
-from solders.hash import Hash
 from solana.rpc.api import Client
-from solders.transaction import Transaction
 from solana.transaction import AccountMeta
 import base58
-import base64
 
 MAX_NAME_LENGTH = 32
 MAX_SYMBOL_LENGTH = 10
@@ -37,7 +34,7 @@ ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID = PublicKey.from_string(
 TOKEN_PROGRAM_ID = PublicKey.from_string("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA")
 
 
-def get_metadata_account(mint_key: PublicKey):
+def get_metadata_account(mint_key: PublicKey) -> PublicKey:
     return PublicKey.find_program_address(
         [
             b"metadata",
@@ -48,7 +45,7 @@ def get_metadata_account(mint_key: PublicKey):
     )[0]
 
 
-def get_edition(mint_key: PublicKey):
+def get_edition(mint_key: PublicKey) -> PublicKey:
     return PublicKey.find_program_address(
         [
             b"metadata",
@@ -61,8 +58,8 @@ def get_edition(mint_key: PublicKey):
 
 
 def create_associated_token_account_instruction(
-    associated_token_account, payer, wallet_address, token_mint_address
-):
+    associated_token_account: PublicKey, payer: PublicKey, wallet_address: PublicKey, token_mint_address: PublicKey
+) -> Instruction:
     keys = [
         AccountMeta(pubkey=payer, is_signer=True, is_writable=True),
         AccountMeta(pubkey=associated_token_account, is_signer=False, is_writable=True),
@@ -79,7 +76,7 @@ def create_associated_token_account_instruction(
     return instruction
 
 
-def _get_data_buffer(name, symbol, uri, fee, creators, verified=None, share=None):
+def _get_data_buffer(name: str, symbol: str, uri: str, fee: int, creators: list[bytes], verified: Optional[list[int]] = None, share: Optional[list[int]] = None) -> bytes:
     if isinstance(share, list):
         assert len(share) == len(creators)
     if isinstance(verified, list):
@@ -121,7 +118,7 @@ def _get_data_buffer(name, symbol, uri, fee, creators, verified=None, share=None
     return buffer
 
 
-def create_metadata_instruction_data(name, symbol, fee, creators):
+def create_metadata_instruction_data(name: str, symbol: str, fee: int, creators: list[bytes]) -> bytes:
     _data = _get_data_buffer(name, symbol, " " * 64, fee, creators)
     metadata_args_layout = cStruct(
         "data" / Bytes(len(_data)),
@@ -141,8 +138,8 @@ def create_metadata_instruction_data(name, symbol, fee, creators):
 
 
 def create_metadata_instruction(
-    data, update_authority, mint_key, mint_authority_key, payer
-):
+    data: bytes, update_authority: PublicKey, mint_key: PublicKey, mint_authority_key: PublicKey, payer: PublicKey
+) -> Instruction:
     metadata_account = get_metadata_account(mint_key)
     keys = [
         AccountMeta(pubkey=metadata_account, is_signer=False, is_writable=True),
@@ -157,7 +154,7 @@ def create_metadata_instruction(
     return Instruction(METADATA_PROGRAM_ID, data, keys)
 
 
-def unpack_metadata_account(data):
+def unpack_metadata_account(data: bytes) -> dict[str, Any]:
     assert data[0] == 4
     i = 1
     source_account = base58.b58encode(
@@ -221,15 +218,17 @@ def unpack_metadata_account(data):
     return metadata
 
 
-def get_metadata(client: Client, mint_key: PublicKey):
+def get_metadata(client: Client, mint_key: PublicKey) -> dict[str, Any]:
     metadata_account = get_metadata_account(mint_key)
     account_info = client.get_account_info(metadata_account)
     account = account_info.value
+    if account is None:
+        return {}
     metadata = unpack_metadata_account(account.data)
     return metadata
 
 
-def update_metadata_instruction_data(name, symbol, uri, fee, creators, verified, share):
+def update_metadata_instruction_data(name: str, symbol: str, uri: str, fee: int, creators: list[bytes], verified: list[int], share: list[int]) -> bytes:
     _data = (
         bytes([1])
         + _get_data_buffer(name, symbol, uri, fee, creators, verified, share)
@@ -247,7 +246,7 @@ def update_metadata_instruction_data(name, symbol, uri, fee, creators, verified,
     )
 
 
-def update_metadata_instruction(data, update_authority, mint_key):
+def update_metadata_instruction(data: bytes, update_authority: PublicKey, mint_key: PublicKey) -> Instruction:
     metadata_account = get_metadata_account(mint_key)
     keys = [
         AccountMeta(pubkey=metadata_account, is_signer=False, is_writable=True),
@@ -261,8 +260,8 @@ def create_master_edition_instruction(
     update_authority: PublicKey,
     mint_authority: PublicKey,
     payer: PublicKey,
-    supply: Union[int, None],
-):
+    supply: Optional[int],
+) -> Instruction:
     edition_account = get_edition(mint)
     metadata_account = get_metadata_account(mint)
     if supply is None:

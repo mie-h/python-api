@@ -5,12 +5,13 @@ import json
 import time
 from solders.keypair import Keypair
 from solders.pubkey import Pubkey as PublicKey
+from solders.signature import Signature
 from solana.rpc.api import Client
 from metaplex.metadata import get_metadata
 from cryptography.fernet import Fernet
 from api.metaplex_api import MetaplexAPI
 
-def await_full_confirmation(client: Client, txn, max_timeout=60):
+def await_full_confirmation(client: Client, txn: Signature, max_timeout: int = 60):
     if txn is None:
         return
     elapsed = 0
@@ -25,8 +26,7 @@ def await_full_confirmation(client: Client, txn, max_timeout=60):
             print(f"Took {elapsed} seconds to confirm transaction {txn}")
             break
 
-# def test(api_endpoint="https://api.devnet.solana.com/"):
-def test(api_endpoint="https://api.testnet.solana.com/"):
+def test(api_endpoint: str = "https://api.devnet.solana.com/"):
     keypair = Keypair()
     cfg = {
         "PRIVATE_KEY": str(keypair),
@@ -58,7 +58,7 @@ def test(api_endpoint="https://api.testnet.solana.com/"):
     topup_response = json.loads(api.topup(api_endpoint, address1))
     print(f"Topup {address1}:", topup_response)
     assert topup_response["status"] == 200
-    mint_to_response = json.loads(api.mint(api_endpoint, PublicKey.from_string(contract), PublicKey.from_string(address1), "https://arweave.net/1eH7bZS-6HZH4YOc8T_tGp2Rq25dlhclXJkoa6U55mM/"))
+    mint_to_response = json.loads(api.mint(api_endpoint, contract, address1, "https://arweave.net/1eH7bZS-6HZH4YOc8T_tGp2Rq25dlhclXJkoa6U55mM/"))
     print("Mint:", mint_to_response)
     # await_confirmation(client, mint_to_response['tx'])
     assert mint_to_response["status"] == 200

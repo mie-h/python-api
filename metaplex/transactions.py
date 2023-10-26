@@ -1,5 +1,6 @@
 import json
 import base64
+from typing import Optional
 from solders.pubkey import Pubkey as PublicKey
 from solana.transaction import Transaction
 from solders.keypair import Keypair
@@ -34,7 +35,7 @@ from metaplex.metadata import (
 )
 
 
-def deploy(api_endpoint: str, source_account: Keypair, name, symbol, fees):
+def deploy(api_endpoint: str, source_account: Keypair, name: str, symbol: str, fees: int) -> tuple[Transaction, list[Keypair], str]:
     # Initalize Client
     client = Client(api_endpoint)
     # List non-derived accounts
@@ -74,7 +75,7 @@ def deploy(api_endpoint: str, source_account: Keypair, name, symbol, fees):
     # Create Token Metadata
     create_metadata_ix = create_metadata_instruction(
         data=create_metadata_instruction_data(
-            name, symbol, fees, [str(source_account.pubkey())]
+            name, symbol, fees, [str(source_account.pubkey()).encode()]
         ),
         update_authority=source_account.pubkey(),
         mint_key=mint_account.pubkey(),
@@ -93,7 +94,7 @@ def wallet():
     return json.dumps({"address": str(pub_key), "private_key": private_key})
 
 
-def topup(api_endpoint, sender_account: Keypair, to, amount=None):
+def topup(api_endpoint: str, sender_account: Keypair, to: str, amount: Optional[int] = None) -> tuple[Transaction, list[Keypair]]:
     """
     Send a small amount of native currency to the specified wallet to handle gas fees. Return a status flag of success or fail and the native transaction data.
     """
@@ -127,16 +128,15 @@ def topup(api_endpoint, sender_account: Keypair, to, amount=None):
 
 
 def update_token_metadata(
-    api_endpoint,
-    source_account,
-    mint_token_id,
-    link,
-    data,
-    fee,
-    creators_addresses,
-    creators_verified,
-    creators_share,
-):
+    source_account: Keypair,
+    mint_token_id: str,
+    link: str,
+    data: dict[str, str],
+    fee: int,
+    creators_addresses: list[bytes],
+    creators_verified: list[int],
+    creators_share: list[int],
+) -> tuple[Transaction, list[Keypair]]:
     """
     Updates the json metadata for a given mint token id.
     """
@@ -165,8 +165,8 @@ def update_token_metadata(
 def mint(
     api_endpoint,
     source_account: Keypair,
-    contract_key: PublicKey,
-    dest_key: PublicKey,
+    contract_key: str,
+    dest_key: str,
     link,
     supply=1,
 ):
@@ -183,9 +183,8 @@ def mint(
     # Initialize Client
     client = Client(api_endpoint)
     # List non-derived accounts
-    mint_account = contract_key
-    user_account = dest_key
-    token_account = TOKEN_PROGRAM_ID
+    mint_account = PublicKey.from_string(contract_key)
+    user_account = PublicKey.from_string(dest_key)
     # List signers
     signers = [source_account]
     # Start transaction
@@ -197,7 +196,7 @@ def mint(
     account_info = associated_token_account_info.value
     if account_info is not None:
         account_state = ACCOUNT_LAYOUT.parse(
-            base64.b64decode(account_info.data[0])
+            base64.b64decode(str(account_info.data[0]))
         ).state
     else:
         account_state = 0
@@ -248,7 +247,7 @@ def mint(
     return tx, signers
 
 
-def send(api_endpoint, source_account: Keypair, contract_key, sender_key, dest_key, private_key: bytes):
+def send(api_endpoint: str, source_account: Keypair, contract_key: str, sender_key: str, dest_key: str, private_key: bytes) -> tuple[Transaction, list[Keypair]]:
     """
     Transfer a token on a given network and contract from the sender to the recipient.
     May require a private key, if so this will be provided encrypted using Fernet: https://cryptography.io/en/latest/fernet/
@@ -277,7 +276,7 @@ def send(api_endpoint, source_account: Keypair, contract_key, sender_key, dest_k
     account_info = associated_token_account_info.value
     if account_info is not None:
         account_state = ACCOUNT_LAYOUT.parse(
-            base64.b64decode(account_info.data[0])
+            base64.b64decode(str(account_info.data[0]))
         ).state
     else:
         account_state = 0
@@ -304,7 +303,7 @@ def send(api_endpoint, source_account: Keypair, contract_key, sender_key, dest_k
     return tx, signers
 
 
-def burn(api_endpoint, contract_key, owner_key, private_key: bytes):
+def burn(api_endpoint: str, contract_key: str, owner_key: str, private_key: bytes) -> tuple[Transaction, list[Keypair]]:
     """
     Burn a token, permanently removing it from the blockchain.
     May require a private key, if so this will be provided encrypted using Fernet: https://cryptography.io/en/latest/fernet/
