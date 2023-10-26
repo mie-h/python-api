@@ -3,14 +3,15 @@ import string
 import random
 import json
 import time
-import base58
-from solana.keypair import Keypair
+from solders.keypair import Keypair
+from solders.pubkey import Pubkey as PublicKey
+from solders.signature import Signature
 from solana.rpc.api import Client
 from metaplex.metadata import get_metadata
 from cryptography.fernet import Fernet
 from api.metaplex_api import MetaplexAPI
 
-def await_full_confirmation(client, txn, max_timeout=60):
+def await_full_confirmation(client: Client, txn: Signature, max_timeout: int = 60):
     if txn is None:
         return
     elapsed = 0
@@ -18,27 +19,27 @@ def await_full_confirmation(client, txn, max_timeout=60):
         sleep_time = 1
         time.sleep(sleep_time)
         elapsed += sleep_time
-        resp = client.get_confirmed_transaction(txn)
-        while 'result' not in resp:
-            resp = client.get_confirmed_transaction(txn)
-        if resp["result"]:
+        resp = client.get_transaction(txn)
+        while resp is None:
+            resp = client.get_transaction(txn)
+        if resp is not None:
             print(f"Took {elapsed} seconds to confirm transaction {txn}")
             break
 
-def test(api_endpoint="https://api.devnet.solana.com/"):
+def test(api_endpoint: str = "https://api.devnet.solana.com/"):
     keypair = Keypair()
     cfg = {
-        "PRIVATE_KEY": base58.b58encode(keypair.seed).decode("ascii"),
-        "PUBLIC_KEY": str(keypair.public_key),
+        "PRIVATE_KEY": str(keypair),
+        "PUBLIC_KEY": str(keypair.pubkey()),
         "DECRYPTION_KEY": Fernet.generate_key().decode("ascii"),
     }
     api = MetaplexAPI(cfg)
     client = Client(api_endpoint)
-    resp = {}
-    while 'result' not in resp:
-        resp = client.request_airdrop(keypair.public_key, int(1e9))
+    resp = None
+    while resp is None:
+        resp = client.request_airdrop(keypair.pubkey(), int(1e9))
     print("Request Airdrop:", resp)
-    txn = resp['result']
+    txn = resp.value
     await_full_confirmation(client, txn)
     letters = string.ascii_uppercase
     name = ''.join([random.choice(letters) for i in range(32)])
@@ -49,8 +50,8 @@ def test(api_endpoint="https://api.devnet.solana.com/"):
     deploy_response = json.loads(api.deploy(api_endpoint, name, symbol, 0))
     print("Deploy:", deploy_response)
     assert deploy_response["status"] == 200
-    contract = deploy_response.get("contract")
-    print(get_metadata(client, contract))
+    contract = deploy_response["contract"]
+    print(get_metadata(client, PublicKey.from_string(contract)))
     wallet = json.loads(api.wallet())
     address1 = wallet.get('address')
     encrypted_pk1 = api.cipher.encrypt(bytes(wallet.get('private_key')))
@@ -61,11 +62,11 @@ def test(api_endpoint="https://api.devnet.solana.com/"):
     print("Mint:", mint_to_response)
     # await_confirmation(client, mint_to_response['tx'])
     assert mint_to_response["status"] == 200
-    print(get_metadata(client, contract))
+    print(get_metadata(client, PublicKey.from_string(contract)))
     wallet2 = json.loads(api.wallet())
     address2 = wallet2.get('address')
     encrypted_pk2 = api.cipher.encrypt(bytes(wallet2.get('private_key')))
-    print(client.request_airdrop(api.public_key, int(1e10)))
+    # print(client.request_airdrop(api.public_key, int(1e10)))
     topup_response2 = json.loads(api.topup(api_endpoint, address2))
     print(f"Topup {address2}:", topup_response2)
     # await_confirmation(client, topup_response2['tx'])
